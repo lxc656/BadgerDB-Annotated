@@ -5,3 +5,5 @@ badger-test*/
 vendor
 
 ./test/dbfile
+
+./mydocs/.DS_Store
