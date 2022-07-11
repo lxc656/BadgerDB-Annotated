@@ -44,8 +44,8 @@ import (
 // and contains a sequence of ManifestChange's (file creations/deletions) which we use to
 // reconstruct the manifest at startup.
 type Manifest struct {
-	Levels []levelManifest
-	Tables map[uint64]TableManifest
+	Levels []levelManifest          //为LSM Tree的每一层都维护一个fileID的集合
+	Tables map[uint64]TableManifest //完成fileID -> table的映射
 
 	// Contains total number of creation and deletion changes in the manifest -- used to compute
 	// whether it'd be useful to rewrite the manifest.

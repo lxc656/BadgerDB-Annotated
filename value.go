@@ -516,6 +516,7 @@ func (vlog *valueLog) fpath(fid uint32) string {
 func (vlog *valueLog) populateFilesMap() error {
 	vlog.filesMap = make(map[uint32]*logFile)
 
+	//读取目录之后填充vlog file 的map
 	files, err := ioutil.ReadDir(vlog.dirPath)
 	if err != nil {
 		return errFile(err, vlog.dirPath, "Unable to open log dir.")
@@ -595,7 +596,7 @@ func (vlog *valueLog) init(db *DB) {
 	vlog.dirPath = vlog.opt.ValueDir
 
 	vlog.garbageCh = make(chan struct{}, 1) // Only allow one GC at a time.
-	lf, err := InitDiscardStats(vlog.opt)
+	lf, err := InitDiscardStats(vlog.opt)   //创建一个Vlog GC的时候用的文件
 	y.Check(err)
 	vlog.discardStats = lf
 }

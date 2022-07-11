@@ -80,7 +80,7 @@ func newLevelsController(db *DB, mf *Manifest) (*levelsController, error) {
 	y.AssertTrue(db.opt.NumLevelZeroTablesStall > db.opt.NumLevelZeroTables)
 	s := &levelsController{
 		kv:     db,
-		levels: make([]*levelHandler, db.opt.MaxLevels),
+		levels: make([]*levelHandler, db.opt.MaxLevels), //levelHandler负责管理每一层中的sst文件
 	}
 	s.cstatus.tables = make(map[uint64]struct{})
 	s.cstatus.levels = make([]*levelCompactStatus, db.opt.MaxLevels)
@@ -99,20 +99,20 @@ func newLevelsController(db *DB, mf *Manifest) (*levelsController, error) {
 	}
 
 	var mu sync.Mutex
-	tables := make([][]*table.Table, db.opt.MaxLevels)
+	tables := make([][]*table.Table, db.opt.MaxLevels) //创建一个tables的二维数组
 	var maxFileID uint64
 
 	// We found that using 3 goroutines allows disk throughput to be utilized to its max.
 	// Disk utilization is the main thing we should focus on, while trying to read the data. That's
 	// the one factor that remains constant between HDD and SSD.
-	throttle := y.NewThrottle(3)
+	throttle := y.NewThrottle(3) //用来负载均衡
 
 	start := time.Now()
 	var numOpened int32
 	tick := time.NewTicker(3 * time.Second)
 	defer tick.Stop()
 
-	for fileID, tf := range mf.Tables {
+	for fileID, tf := range mf.Tables { //将manifest文件中记录的所有sst文件注册到levelsController
 		fname := table.NewFilename(fileID, db.opt.Dir)
 		select {
 		case <-tick.C:
@@ -143,7 +143,7 @@ func newLevelsController(db *DB, mf *Manifest) (*levelsController, error) {
 			topt.Compression = tf.Compression
 			topt.DataKey = dk
 
-			mf, err := z.OpenMmapFile(fname, db.opt.getFileFlags(), 0)
+			mf, err := z.OpenMmapFile(fname, db.opt.getFileFlags(), 0) //初始化每一个sst文件关联为一个mmap文件
 			if err != nil {
 				rerr = y.Wrapf(err, "Opening file: %q", fname)
 				return
@@ -173,7 +173,7 @@ func newLevelsController(db *DB, mf *Manifest) (*levelsController, error) {
 		time.Since(start).Round(time.Millisecond))
 	s.nextFileID = maxFileID + 1
 	for i, tbls := range tables {
-		s.levels[i].initTables(tbls)
+		s.levels[i].initTables(tbls) //根据manifest里的记录，初始化每一层的table对象
 	}
 
 	// Make sure key ranges do not overlap etc.

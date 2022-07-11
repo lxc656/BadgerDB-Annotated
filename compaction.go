@@ -123,6 +123,7 @@ func getKeyRange(tables ...*table.Table) keyRange {
 	}
 }
 
+//记录合并状态，用于compact的场景下
 type levelCompactStatus struct {
 	ranges  []keyRange
 	delSize int64

@@ -187,10 +187,11 @@ func checkAndSetOptions(opt *Options) error {
 
 // Open returns a new DB object.
 func Open(opt Options) (*DB, error) {
+	//对DB配置中的参数进行检查
 	if err := checkAndSetOptions(&opt); err != nil {
 		return nil, err
 	}
-	var dirLockGuard, valueDirLockGuard *directoryLockGuard
+	var dirLockGuard, valueDirLockGuard *directoryLockGuard //目录锁
 
 	// Create directories and acquire lock on it only if badger is not running in InMemory mode.
 	// We don't have any directories/files in InMemory mode so we don't need to acquire
@@ -251,7 +252,7 @@ func Open(opt Options) (*DB, error) {
 		manifest:         manifestFile,
 		dirLockGuard:     dirLockGuard,
 		valueDirGuard:    valueDirLockGuard,
-		orc:              newOracle(opt),
+		orc:              newOracle(opt), //用来管理事务的版本号，进而实现MVCC
 		pub:              newPublisher(),
 		allocPool:        z.NewAllocatorPool(8),
 		bannedNamespaces: &lockedKeys{keys: make(map[uint64]struct{})},
@@ -266,7 +267,7 @@ func Open(opt Options) (*DB, error) {
 		}
 	}()
 
-	if opt.BlockCacheSize > 0 {
+	if opt.BlockCacheSize > 0 { //块缓存初始化
 		numInCache := opt.BlockCacheSize / int64(opt.BlockSize)
 		if numInCache == 0 {
 			// Make the value of this variable at least one since the cache requires
@@ -281,13 +282,13 @@ func Open(opt Options) (*DB, error) {
 			Metrics:     true,
 			OnExit:      table.BlockEvictHandler,
 		}
-		db.blockCache, err = ristretto.NewCache(&config)
+		db.blockCache, err = ristretto.NewCache(&config) //ristretto是第三方的高性能缓存库
 		if err != nil {
 			return nil, y.Wrap(err, "failed to create data cache")
 		}
 	}
 
-	if opt.IndexCacheSize > 0 {
+	if opt.IndexCacheSize > 0 { //对sst文件索引的缓存初始化
 		// Index size is around 5% of the table size.
 		indexSz := int64(float64(opt.MemTableSize) * 0.05)
 		numInCache := opt.IndexCacheSize / indexSz
@@ -350,6 +351,7 @@ func Open(opt Options) (*DB, error) {
 	// Initialize vlog struct.
 	db.vlog.init(db)
 
+	//开始启动compact协程
 	if !opt.ReadOnly {
 		db.closers.compactors = z.NewCloser(1)
 		db.lc.startCompact(db.closers.compactors)

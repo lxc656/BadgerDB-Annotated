@@ -69,7 +69,7 @@ func (db *DB) openMemTables(opt Options) error {
 			continue
 		}
 		fsz := len(file.Name())
-		fid, err := strconv.ParseInt(file.Name()[:fsz-len(memFileExt)], 10, 64)
+		fid, err := strconv.ParseInt(file.Name()[:fsz-len(memFileExt)], 10, 64) //把.mem后缀去掉
 		if err != nil {
 			return errFile(err, file.Name(), "Unable to parse log id.")
 		}
@@ -107,6 +107,7 @@ func (db *DB) openMemTables(opt Options) error {
 
 const memFileExt string = ".mem"
 
+//通过mmap的方式来实现
 func (db *DB) openMemTable(fid, flags int) (*memTable, error) {
 	filepath := db.mtFilePath(fid)
 	s := skl.NewSkiplist(arenaSize(db.opt))

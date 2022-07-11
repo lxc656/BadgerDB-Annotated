@@ -73,12 +73,12 @@ func (s *levelHandler) initTables(tables []*table.Table) {
 	if s.level == 0 {
 		// Key range will overlap. Just sort by fileID in ascending order
 		// because newer tables are at the end of level 0.
-		sort.Slice(s.tables, func(i, j int) bool {
+		sort.Slice(s.tables, func(i, j int) bool { //L0层按照fileID排序
 			return s.tables[i].ID() < s.tables[j].ID()
 		})
 	} else {
 		// Sort tables by keys.
-		sort.Slice(s.tables, func(i, j int) bool {
+		sort.Slice(s.tables, func(i, j int) bool { //其他层按每个表中最小key进行排序
 			return y.CompareKeys(s.tables[i].Smallest(), s.tables[j].Smallest()) < 0
 		})
 	}
